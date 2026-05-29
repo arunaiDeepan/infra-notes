@@ -1,0 +1,69 @@
+#!/bin/sh
+# Convert Obsidian wikilinks to GitHub-flavored markdown in STAGED content.
+# Working-tree files are left untouched so Obsidian keeps seeing wikilinks.
+#
+# Disable for a single commit with: SKIP_OBSIDIAN_CONVERT=1 git commit ...
+
+set -eu
+
+if [ "${SKIP_OBSIDIAN_CONVERT:-0}" = "1" ]; then
+    exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CONVERTER="$REPO_ROOT/scripts/obsidian_to_github.py"
+
+if [ ! -f "$CONVERTER" ]; then
+    echo "pre-commit: $CONVERTER not found; skipping conversion." >&2
+    exit 0
+fi
+
+# Pick a python interpreter. Prefer python, fall back to py (Windows launcher).
+if command -v python >/dev/null 2>&1; then
+    PY=python
+elif command -v py >/dev/null 2>&1; then
+    PY=py
+else
+    echo "pre-commit: python not found; cannot run wikilink converter." >&2
+    exit 1
+fi
+
+changed_any=0
+
+# NUL-delimited so filenames with spaces survive.
+git diff --cached --name-only --diff-filter=ACMR -z | \
+while IFS= read -r -d '' file; do
+    case "$file" in
+        *.md) ;;
+        *) continue ;;
+    esac
+
+    # Read STAGED content (not working tree) so user-side wikilinks stay intact.
+    staged_blob=$(git ls-files -s -- "$file" | awk '{print $2}')
+    [ -z "$staged_blob" ] && continue
+
+    # Run staged blob through the converter; hash-object computes the new blob ID
+    # without writing to the object DB so we can short-circuit no-op conversions.
+    new_blob=$(
+        git cat-file -p "$staged_blob" \
+            | "$PY" "$CONVERTER" --source-path "$file" --repo-root "$REPO_ROOT" \
+            | git hash-object --stdin
+    )
+
+    if [ "$new_blob" = "$staged_blob" ]; then
+        continue
+    fi
+
+    # Different content - now actually persist the new blob and update the index.
+    new_blob=$(
+        git cat-file -p "$staged_blob" \
+            | "$PY" "$CONVERTER" --source-path "$file" --repo-root "$REPO_ROOT" \
+            | git hash-object -w --stdin
+    )
+    mode=$(git ls-files -s -- "$file" | awk '{print $1}')
+    git update-index --cacheinfo "$mode" "$new_blob" "$file"
+    echo "pre-commit: converted wikilinks in $file" >&2
+    changed_any=1
+done
+
+exit 0

@@ -36,7 +36,7 @@ def slugify(text: str) -> str:
       1. lowercase
       2. strip everything that isn't a unicode word char, hyphen, or space
       3. replace each single space with a single hyphen (consecutive spaces are
-         preserved as consecutive hyphens — e.g. " — " becomes "--")
+         preserved as consecutive hyphens - e.g. " - " becomes "--")
     """
     text = text.lower()
     text = re.sub(r"[^\w\- ]+", "", text, flags=re.UNICODE)
@@ -145,7 +145,7 @@ def main(argv: list[str]) -> int:
         original = source_file.read_bytes().decode("utf-8")
     else:
         source_file = Path(args.source_path).resolve() if args.source_path else None
-        # On Windows, sys.stdin in text mode translates CRLF/LF — use buffer for byte-faithful I/O.
+        # On Windows, sys.stdin in text mode translates CRLF/LF - use buffer for byte-faithful I/O.
         original = sys.stdin.buffer.read().decode("utf-8")
 
     converted = convert_text(original, source_file=source_file, repo_root=repo_root)

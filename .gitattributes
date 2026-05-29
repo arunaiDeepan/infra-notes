@@ -1,0 +1,5 @@
+# Run the bidirectional Obsidian <-> GitHub markdown filter on every .md file.
+# The filter only activates if scripts/install.sh has been run for this clone
+# (it configures filter.obsidian.clean / .smudge in local git config).
+# Without configuration, .md files pass through unchanged.
+*.md filter=obsidian

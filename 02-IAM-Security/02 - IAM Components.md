@@ -1,6 +1,20 @@
-This is the absolute core of **security** on AWS. If you misconfigure IAM, you are essentially leaving your front door wide open while storing gold bricks inside.
+# IAM Components - Users, Groups, Roles, Policies
 
-Let’s break down the components, the inheritance logic, the critical differences from Root, and the "golden rule" of Admin permissions.
+> The four building blocks of every AWS access control story. Get these straight and everything else (cross-account, federation, MFA, SCPs) clicks into place. Foundational for the SAA-C03 Security domain.
+
+See also: [01 - IAM Intro bits & bytes](01%20-%20IAM%20Intro%20bits%20%26%20bytes.md) · [03 - IAM Policy Structure](03%20-%20IAM%20Policy%20Structure.md) · [04 - IAM access](04%20-%20IAM%20access.md) · [05 - IAM Scenarios](05%20-%20IAM%20Scenarios.md)
+
+---
+
+## Table of Contents
+
+- [1. The Core Components: Users, Groups, Roles, Policies](#1-the-core-components-users-groups-roles-policies)
+- [2. IAM Policy Structure (The JSON Grammar)](#2-iam-policy-structure-the-json-grammar)
+- [3. Inheritance & Evaluation Logic](#3-inheritance--evaluation-logic)
+- [4. Root User vs. IAM User (The Critical Difference)](#4-root-user-vs-iam-user-the-critical-difference)
+- [5. User with Admin Permission (The Right Way)](#5-user-with-admin-permission-the-right-way)
+- [6. Complete Best Practices Summary](#6-complete-best-practices-summary)
+- [7. Quick Mini-Quiz to Test Yourself](#7-quick-mini-quiz-to-test-yourself)
 
 ---
 
@@ -28,7 +42,7 @@ A **Policy** is the document that *defines permissions*. It answers: *"Who can d
 - **Types:**
   - **AWS Managed:** Created by AWS (e.g., `AdministratorAccess`, `ReadOnlyAccess`).
   - **Customer Managed:** You create and manage them.
-  - **Inline:** A policy embedded directly *inside* a single User or Group (not recommended—hard to audit).
+  - **Inline:** A policy embedded directly *inside* a single User or Group (not recommended-hard to audit).
 
 ### 🎭 IAM Role
 
@@ -226,5 +240,3 @@ Create a **Customer Managed Policy** that requires MFA for all sensitive actions
 
 **Q4:** What happens if a policy is attached to a user AND to a group the user belongs to?  
 *A:* They combine (union) of all permissions. Deny still overrides.
-
----

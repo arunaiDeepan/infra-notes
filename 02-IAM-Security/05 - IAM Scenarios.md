@@ -1,6 +1,6 @@
-# IAM Scenarios — Real-World Practice for AWS SAA-C03
+# IAM Scenarios - Real-World Practice for AWS SAA-C03
 
-> Practical IAM policy scenarios with JSON examples, line-by-line explanations, CLI testing steps, and common mistakes. See also: [IAM Intro bits & bytes](IAM%20Intro%20bits%20%26%20bytes.md) for the fundamentals.
+> Practical IAM policy scenarios with JSON examples, line-by-line explanations, CLI testing steps, and common mistakes. See also: [01 - IAM Intro bits & bytes](01%20-%20IAM%20Intro%20bits%20%26%20bytes.md) for the fundamentals.
 
 ---
 
@@ -8,10 +8,10 @@
 
 ### Scenario-Based Policies
 
-- [Scenario 1 — Users Can Only Access Their Own S3 Folder](#scenario-1--users-can-only-access-their-own-s3-folder)
-- [Scenario 2 — Developers Can Stop/Start EC2 But Not Delete](#scenario-2--developers-can-stopstart-ec2-but-not-delete)
-- [Scenario 3 — MFA Conditions — "No MFA, No Sensitive Actions"](#scenario-3--mfa-conditions--no-mfa-no-sensitive-actions)
-- [Scenario 4 — Resource-Based Policies (S3 Bucket Policies vs IAM Policies)](#scenario-4--resource-based-policies-s3-bucket-policies-vs-iam-policies)
+- [Scenario 1 - Users Can Only Access Their Own S3 Folder](#scenario-1---users-can-only-access-their-own-s3-folder)
+- [Scenario 2 - Developers Can Stop/Start EC2 But Not Delete](#scenario-2---developers-can-stopstart-ec2-but-not-delete)
+- [Scenario 3 - MFA Conditions - "No MFA, No Sensitive Actions"](#scenario-3---mfa-conditions---no-mfa-no-sensitive-actions)
+- [Scenario 4 - Resource-Based Policies (S3 Bucket Policies vs IAM Policies)](#scenario-4---resource-based-policies-s3-bucket-policies-vs-iam-policies)
 
 ### Reference & Cheat Sheets
 
@@ -24,7 +24,7 @@
 
 ---
 
-## Scenario 1 — Users Can Only Access Their Own S3 Folder
+## Scenario 1 - Users Can Only Access Their Own S3 Folder
 
 ### Requirement
 
@@ -43,8 +43,8 @@ You have an S3 bucket named `company-files`. Each developer (IAM user: `alice`, 
 
 S3 has two separate permission categories that work differently:
 
-- `s3:ListBucket` — operates at the **bucket level** (resource = bucket ARN)
-- `s3:GetObject` / `PutObject` / `DeleteObject` — operate at the **object level** (resource = object ARN)
+- `s3:ListBucket` - operates at the **bucket level** (resource = bucket ARN)
+- `s3:GetObject` / `PutObject` / `DeleteObject` - operate at the **object level** (resource = object ARN)
 
 You need both, but you must restrict `ListBucket` to only show the user's own prefix.
 
@@ -83,15 +83,15 @@ You need both, but you must restrict `ListBucket` to only show the user's own pr
 
 **Statement 1 (`s3:ListBucket`):**
 
-- `Action: s3:ListBucket` — API call to list objects in a bucket
-- `Resource: arn:aws:s3:::company-files` — the bucket itself (not the objects inside)
-- `Condition: StringLike { "s3:prefix": "${aws:username}/*" }` — only list objects whose path starts with the user's username (e.g., `alice/`)
+- `Action: s3:ListBucket` - API call to list objects in a bucket
+- `Resource: arn:aws:s3:::company-files` - the bucket itself (not the objects inside)
+- `Condition: StringLike { "s3:prefix": "${aws:username}/*" }` - only list objects whose path starts with the user's username (e.g., `alice/`)
 
 **Statement 2 (Object permissions):**
 
-- `Action: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]` — read, write, delete
-- `Resource: arn:aws:s3:::company-files/${aws:username}/*` — only objects inside their personal folder (`*` matches any file inside)
-- `${aws:username}` — a policy variable AWS replaces with the authenticated IAM username
+- `Action: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]` - read, write, delete
+- `Resource: arn:aws:s3:::company-files/${aws:username}/*` - only objects inside their personal folder (`*` matches any file inside)
+- `${aws:username}` - a policy variable AWS replaces with the authenticated IAM username
 
 ### Result Matrix
 
@@ -110,17 +110,17 @@ You need both, but you must restrict `ListBucket` to only show the user's own pr
 aws configure set profile.alice.aws_access_key_id AKIA...
 aws configure set profile.alice.aws_secret_access_key ...
 
-# List own folder — works
+# List own folder - works
 aws s3 ls s3://company-files/alice/ --profile alice
 
-# Upload to own folder — works
+# Upload to own folder - works
 echo "Hello" > test.txt
 aws s3 cp test.txt s3://company-files/alice/test.txt --profile alice
 
-# List bob's folder — fails (Access Denied)
+# List bob's folder - fails (Access Denied)
 aws s3 ls s3://company-files/bob/ --profile alice
 
-# Upload to bob's folder — fails (Access Denied)
+# Upload to bob's folder - fails (Access Denied)
 aws s3 cp test.txt s3://company-files/bob/test.txt --profile alice
 ```
 
@@ -130,13 +130,13 @@ aws s3 cp test.txt s3://company-files/bob/test.txt --profile alice
 | :--- | :--- | :--- |
 | Using `Resource: arn:aws:s3:::company-files/*` for `ListBucket` | `ListBucket` requires the bucket ARN, not object ARNs | Use bucket ARN + condition on `s3:prefix` |
 | Forgetting the trailing `/*` in object ARN | Without `/*` you only target the *folder marker* (which doesn't exist), not files inside | Use `${aws:username}/*` |
-| Using `${aws:username}` in a role | Roles have no username — variable resolves to empty string | Use `${aws:userid}` or pass via `sts:RoleSessionName` |
+| Using `${aws:username}` in a role | Roles have no username - variable resolves to empty string | Use `${aws:userid}` or pass via `sts:RoleSessionName` |
 
 [⬆ Back to top](#table-of-contents)
 
 ---
 
-## Scenario 2 — Developers Can Stop/Start EC2 But Not Delete
+## Scenario 2 - Developers Can Stop/Start EC2 But Not Delete
 
 ### Requirement
 
@@ -186,16 +186,16 @@ Developers in the `DevTeam` group need to manage EC2 instances in the `dev` envi
 
 ### Line-by-Line Explanation
 
-**Statement 1 — Describe:**
+**Statement 1 - Describe:**
 
 - `ec2:DescribeInstances` is a read-only API call. It returns metadata, not a specific resource, so it requires `Resource: "*"`.
 
-**Statement 2 — Start/Stop/Reboot with tag check:**
+**Statement 2 - Start/Stop/Reboot with tag check:**
 
-- `Resource: arn:aws:ec2:us-east-1:123456789012:instance/*` — all EC2 instances in this account/region
-- `Condition: StringEquals { "ec2:ResourceTag/Environment": "dev" }` — only allow the action if the instance is tagged `Environment=dev`
+- `Resource: arn:aws:ec2:us-east-1:123456789012:instance/*` - all EC2 instances in this account/region
+- `Condition: StringEquals { "ec2:ResourceTag/Environment": "dev" }` - only allow the action if the instance is tagged `Environment=dev`
 
-**Statement 3 — Explicit Deny on Terminate:**
+**Statement 3 - Explicit Deny on Terminate:**
 
 - Overrides any Allow from other policies. This is your safety net even if someone attaches `EC2FullAccess` later.
 
@@ -211,16 +211,16 @@ Developers in the `DevTeam` group need to manage EC2 instances in the `dev` envi
 ### Testing With AWS CLI
 
 ```bash
-# Describe instances — works (shows all)
+# Describe instances - works (shows all)
 aws ec2 describe-instances --profile alice
 
-# Stop dev instance — works
+# Stop dev instance - works
 aws ec2 stop-instances --instance-ids i-11111 --profile alice
 
-# Stop prod instance — fails (condition mismatch)
+# Stop prod instance - fails (condition mismatch)
 aws ec2 stop-instances --instance-ids i-22222 --profile alice
 
-# Terminate any instance — fails (explicit Deny wins)
+# Terminate any instance - fails (explicit Deny wins)
 aws ec2 terminate-instances --instance-ids i-11111 --profile alice
 ```
 
@@ -229,7 +229,7 @@ aws ec2 terminate-instances --instance-ids i-11111 --profile alice
 | Mistake | Why It's Wrong | Fix |
 | :--- | :--- | :--- |
 | Forgetting `ec2:DescribeInstances` | Users can't see instances in console/CLI, so they can't pick one to stop | Always include describe permissions |
-| Using `arn:aws:ec2:*:*:instance/*` | Too broad — applies across all regions | Restrict to specific region |
+| Using `arn:aws:ec2:*:*:instance/*` | Too broad - applies across all regions | Restrict to specific region |
 | Relying only on tags without explicit Deny | Another attached policy with admin rights could bypass tag checks | Add explicit Deny on dangerous actions |
 | Allowing `StopInstances` without `StartInstances` | User can stop but never restart (stranded instance) | Pair stop with start |
 
@@ -237,7 +237,7 @@ aws ec2 terminate-instances --instance-ids i-11111 --profile alice
 
 ---
 
-## Scenario 3 — MFA Conditions — "No MFA, No Sensitive Actions"
+## Scenario 3 - MFA Conditions - "No MFA, No Sensitive Actions"
 
 ### The Problem
 
@@ -302,7 +302,7 @@ A developer's password gets phished. Without MFA enforcement, the attacker has f
 | :--- | :--- |
 | `"Bool": { "aws:MultiFactorAuthPresent": "true" }` | ✅ Works only when MFA is present |
 | `"Bool": { "aws:MultiFactorAuthPresent": "false" }` | ⚠️ Fails when the key doesn't exist (some API calls don't include it) |
-| `"BoolIfExists": { "aws:MultiFactorAuthPresent": "false" }` | ✅ Handles both "missing" and "false" — use this for Deny statements |
+| `"BoolIfExists": { "aws:MultiFactorAuthPresent": "false" }` | ✅ Handles both "missing" and "false" - use this for Deny statements |
 
 > **Critical:** When AWS evaluates an API call made via an IAM Role, `aws:MultiFactorAuthPresent` may not exist at all. `BoolIfExists` gracefully treats missing keys as a match.
 
@@ -368,14 +368,14 @@ A developer's password gets phished. Without MFA enforcement, the attacker has f
 
 ### Using MFA From the CLI
 
-**Step 1 — Long-term keys give read-only access:**
+**Step 1 - Long-term keys give read-only access:**
 
 ```bash
 aws s3 ls s3://company-bucket/ --profile dev          # works (read)
 aws s3 cp file.txt s3://company-bucket/ --profile dev # fails (write requires MFA)
 ```
 
-**Step 2 — Request an MFA session token:**
+**Step 2 - Request an MFA session token:**
 
 ```bash
 aws sts get-session-token \
@@ -385,7 +385,7 @@ aws sts get-session-token \
 # Returns AccessKeyId / SecretAccessKey / SessionToken (valid up to 36h)
 ```
 
-**Step 3 — Configure a new profile using the temporary credentials:**
+**Step 3 - Configure a new profile using the temporary credentials:**
 
 ```bash
 aws configure set profile.dev-mfa.aws_access_key_id ASIA...
@@ -419,14 +419,14 @@ echo "MFA session active for 12 hours"
 
 ---
 
-## Scenario 4 — Resource-Based Policies (S3 Bucket Policies vs IAM Policies)
+## Scenario 4 - Resource-Based Policies (S3 Bucket Policies vs IAM Policies)
 
 ### The Fundamental Difference
 
 | Aspect | Identity-Based Policy (IAM) | Resource-Based Policy (S3, SQS, SNS, KMS, Lambda) |
 | :--- | :--- | :--- |
 | **Attached to** | IAM User, Group, Role | AWS resource (S3 bucket, SQS queue, etc.) |
-| **Who it grants access to** | The specific identity it's attached to | Any principal — including cross-account |
+| **Who it grants access to** | The specific identity it's attached to | Any principal - including cross-account |
 | **Requires `Principal`** | No (implied from identity) | Yes (explicit) |
 | **Cross-account access** | Needs role + trust policy | Direct (no role needed) |
 | **Size limit** | 6,144 chars (managed) / 2,048 (inline) | 20 KB for S3 bucket policy |
@@ -481,7 +481,7 @@ Bucket Policy:      Deny
 RESULT: ❌ Denied (Deny wins)
 ```
 
-> Same-account access requires **either** an Allow in IAM **or** in the resource policy. Cross-account access requires **both** — the trusting account grants via resource policy, and the trusted account's IAM admin grants the user IAM permission.
+> Same-account access requires **either** an Allow in IAM **or** in the resource policy. Cross-account access requires **both** - the trusting account grants via resource policy, and the trusted account's IAM admin grants the user IAM permission.
 
 ### Public Read-Only Bucket (Static Website)
 
@@ -523,7 +523,7 @@ RESULT: ❌ Denied (Deny wins)
 | Complex conditions (IP, MFA, time) | IAM policy (supports more condition keys) |
 | Restrict access to a specific VPC endpoint | S3 bucket policy with `aws:SourceVpce` |
 
-### Defense in Depth — VPC + MFA Required
+### Defense in Depth - VPC + MFA Required
 
 ```json
 {
@@ -585,7 +585,7 @@ Effective permissions for a user in `Developers`:
 
 - S3: own-folder access (restricted by `${aws:username}`)
 - EC2: start/stop on instances tagged `Environment=dev`
-- Independent — they govern different services, so no conflicts
+- Independent - they govern different services, so no conflicts
 
 [⬆ Back to top](#table-of-contents)
 
@@ -622,7 +622,7 @@ Before deploying any policy to production:
      --output table
    ```
 
-5. **IAM Access Analyzer** — surfaces resources that grant access to external principals (public/anonymous, cross-account).
+5. **IAM Access Analyzer** - surfaces resources that grant access to external principals (public/anonymous, cross-account).
 
 [⬆ Back to top](#table-of-contents)
 
@@ -665,13 +665,13 @@ The official AWS evaluation order for a single account (simplified):
 
 | Layer | Scope | Grants permissions? | Caps permissions? |
 | :--- | :--- | :--- | :--- |
-| **SCP** (AWS Organizations) | Whole account / OU | ❌ No | ✅ Yes — max for everyone in account, including root |
-| **Permissions Boundary** | A single IAM user/role | ❌ No | ✅ Yes — max for that identity |
+| **SCP** (AWS Organizations) | Whole account / OU | ❌ No | ✅ Yes - max for everyone in account, including root |
+| **Permissions Boundary** | A single IAM user/role | ❌ No | ✅ Yes - max for that identity |
 | **Identity policy** | User / group / role | ✅ Yes | ❌ No |
 | **Resource policy** | The resource | ✅ Yes (to anyone, incl. cross-account) | ❌ No |
 | **Session policy** | One STS session | ✅ Filters inherited permissions | ✅ Yes |
 
-> **Exam pattern:** "Even though the IAM user has `AdministratorAccess`, they can't perform action X. Why?" — usually an SCP, a permissions boundary, an explicit Deny, or a resource-policy Deny.
+> **Exam pattern:** "Even though the IAM user has `AdministratorAccess`, they can't perform action X. Why?" - usually an SCP, a permissions boundary, an explicit Deny, or a resource-policy Deny.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -758,7 +758,7 @@ The official AWS evaluation order for a single account (simplified):
 }
 ```
 
-> A recurring office-hours window (e.g. "9–5 every weekday") can't be expressed cleanly in a single IAM policy — production setups usually use IAM Identity Center permission sets with time-bound sessions, or a Lambda+EventBridge job that toggles policy attachment.
+> A recurring office-hours window (e.g. "9–5 every weekday") can't be expressed cleanly in a single IAM policy - production setups usually use IAM Identity Center permission sets with time-bound sessions, or a Lambda+EventBridge job that toggles policy attachment.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -780,11 +780,11 @@ High-yield IAM patterns the exam loves to test:
    - Boundary = caps a single user/role.
    - SCP = caps an entire account/OU (and even root in that account).
 5. **Explicit Deny always wins.** Period. Used as the safety mechanism in every well-designed policy.
-6. **Resource policies grant cross-account access without a role** — for services that support them: S3, SQS, SNS, Lambda, KMS, ECR, Secrets Manager. EC2, RDS, DynamoDB do **not** have resource-based policies — you must use roles for them.
-7. **`iam:PassRole`** is required to attach a role to a service (e.g., launch EC2 with a role). Common gotcha — users can launch EC2 but can't attach the role.
+6. **Resource policies grant cross-account access without a role** - for services that support them: S3, SQS, SNS, Lambda, KMS, ECR, Secrets Manager. EC2, RDS, DynamoDB do **not** have resource-based policies - you must use roles for them.
+7. **`iam:PassRole`** is required to attach a role to a service (e.g., launch EC2 with a role). Common gotcha - users can launch EC2 but can't attach the role.
 8. **`MFAAge` vs `MFAPresent`:** if the question says "MFA in last 30 minutes," it's `aws:MultiFactorAuthAge`.
 9. **STS session length:** `GetSessionToken` ≤ 36h for IAM users; `AssumeRole` ≤ 12h (and ≤ role's `MaxSessionDuration`).
-10. **`aws:SourceIp` does NOT match traffic from VPC endpoints** — use `aws:SourceVpc` / `aws:SourceVpce` instead.
+10. **`aws:SourceIp` does NOT match traffic from VPC endpoints** - use `aws:SourceVpc` / `aws:SourceVpce` instead.
 11. **S3 Block Public Access overrides bucket policies.** If a "public" bucket policy isn't working in a question, suspect BPA.
 12. **IAM is global, not regional.** Users, groups, roles, policies have no region. (The resources you control with them may be regional.)
 
