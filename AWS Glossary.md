@@ -19,23 +19,27 @@ All servers share the same IP address using anycast.
 If you query that IP from Chennai, your request may go to the Singapore or India server because it is closest.
 
 Common uses of anycast:
+
 - DNS services
 - CDNs
 - DDoS protection
 - Global load balancing
 
 Benefits:
+
 - Faster response times
 - High availability
 - Better fault tolerance
 - Traffic distribution across regions
 
 Real-world examples:
+
 - Cloudflare DNS
 - Google Public DNS (`8.8.8.8`)
 - Amazon Route 53
 
 Simple analogy:
+
 - Imagine one customer care phone number connected to call centers in many cities.
 - When you call, the telecom network automatically connects you to the nearest center.
 - That is similar to how anycast works.

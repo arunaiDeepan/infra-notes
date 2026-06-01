@@ -26,24 +26,24 @@ That's it. Edit notes normally; everything else is automatic.
 
 ## Daily workflow
 
-| What you do | What happens |
-| :--- | :--- |
-| Edit `.md` files with `[wikilinks](wikilinks.md)` | Working tree always shows wikilinks. |
-| `git add file.md` | **Clean filter** converts → anchors in the index. |
-| `git commit` | **Pre-commit hook** runs the same conversion as a safety net (no-op if filter already ran). |
-| `git push` | GitHub renders anchor links correctly. |
-| `git pull` / `git checkout` | **Smudge filter** converts back → wikilinks in your working tree. |
-| `git status` shows `AM` flag | Normal - staged (anchors) intentionally differs from working (wikilinks). |
+| What you do                           | What happens                                                                                |
+| :------------------------------------ | :------------------------------------------------------------------------------------------ |
+| Edit `.md` files with `[wikilinks](wikilinks.md)` | Working tree always shows wikilinks.                                                        |
+| `git add file.md`                     | **Clean filter** converts → anchors in the index.                                           |
+| `git commit`                          | **Pre-commit hook** runs the same conversion as a safety net (no-op if filter already ran). |
+| `git push`                            | GitHub renders anchor links correctly.                                                      |
+| `git pull` / `git checkout`           | **Smudge filter** converts back → wikilinks in your working tree.                           |
+| `git status` shows `AM` flag          | Normal - staged (anchors) intentionally differs from working (wikilinks).                   |
 
 Override / escape hatches:
 
-| Command | Effect |
-| :--- | :--- |
-| `SKIP_OBSIDIAN_CONVERT=1 git commit -m "…"` | Bypass the pre-commit hook for one commit. (Filter still runs at `git add` time.) |
-| `git -c filter.obsidian.clean=cat -c filter.obsidian.smudge=cat add file.md` | Bypass both filters for one command. |
-| `python scripts/obsidian_to_github.py file.md` | Manual in-place forward conversion. |
-| `python scripts/github_to_obsidian.py file.md` | Manual in-place reverse conversion. |
-| `python scripts/obsidian_to_github.py --check file.md` | Exit 1 if file has wikilinks (useful in CI). |
+| Command                                                                      | Effect                                                                            |
+| :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
+| `SKIP_OBSIDIAN_CONVERT=1 git commit -m "…"`                                  | Bypass the pre-commit hook for one commit. (Filter still runs at `git add` time.) |
+| `git -c filter.obsidian.clean=cat -c filter.obsidian.smudge=cat add file.md` | Bypass both filters for one command.                                              |
+| `python scripts/obsidian_to_github.py file.md`                               | Manual in-place forward conversion.                                               |
+| `python scripts/github_to_obsidian.py file.md`                               | Manual in-place reverse conversion.                                               |
+| `python scripts/obsidian_to_github.py --check file.md`                       | Exit 1 if file has wikilinks (useful in CI).                                      |
 
 ---
 
@@ -62,16 +62,16 @@ python scripts/obsidian_to_github.py --source-path notes/x.md # set source for r
 
 What it converts:
 
-| Input | Output |
-| :--- | :--- |
-| `[Heading](#heading)` | `[Heading](#slug)` |
-| `[Alias](#heading)` | `[Alias](#slug)` |
-| `[File](File.md)` | `[File](File.md)` |
-| `[Alias](File%5C.md)` | `[Alias](File.md)` |
-| `[File > Heading](File.md#heading)` | `[File > Heading](File.md#slug)` |
-| `[Alias](File.md#heading)` | `[Alias](File.md#slug)` |
+| Input                     | Output                           |
+| :------------------------ | :------------------------------- |
+| `[Heading](#heading)`            | `[Heading](#slug)`               |
+| `[Alias](#heading)`     | `[Alias](#slug)`                 |
+| `[File](File.md)`                | `[File](File.md)`                |
+| `[Alias](File.md)`         | `[Alias](File.md)`               |
+| `[File > Heading](File.md#heading)`        | `[File > Heading](File.md#slug)` |
+| `[Alias](File.md#heading)` | `[Alias](File.md#slug)`          |
 
-Slug rules match GitHub's `jch/html-pipeline`: lowercase, strip everything that isn't a word char / hyphen / space, then replace spaces with hyphens (consecutive spaces become consecutive hyphens - so `- ` produces `--`).
+Slug rules match GitHub's `jch/html-pipeline`: lowercase, strip everything that isn't a word char / hyphen / space, then replace spaces with hyphens (consecutive spaces become consecutive hyphens - so `-` produces `--`).
 
 ### `github_to_obsidian.py` - reverse (anchors → wikilinks)
 
@@ -84,6 +84,7 @@ python scripts/github_to_obsidian.py --check file.md          # exit 1 if would 
 ```
 
 Detection rules (leaves links alone otherwise):
+
 - URL starts with `#` → same-file anchor. Looks up the slug in headings of the current file.
 - URL is a relative `.md` path (URL-decoded) with optional `#anchor` → cross-file link. Looks up the file by basename in the repo, then the slug in that file's headings.
 - URL starts with `http://`, `https://`, `mailto:`, `ftp(s)://`, `//` → external, untouched.
@@ -110,11 +111,11 @@ Tracked. Without the matching `filter.obsidian.clean/smudge` git-config entries 
 
 ## How it works (three layers)
 
-| Layer | Trigger | Direction | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Clean filter** | `git add` (any time the working tree → index) | wikilinks → anchors | Primary forward conversion. |
-| **Smudge filter** | `git checkout`, `git pull`, `git clone` (index → working tree) | anchors → wikilinks | Primary reverse conversion. Keeps the working tree Obsidian-friendly forever. |
-| **Pre-commit hook** | `git commit` | wikilinks → anchors (on staged blob) | Fallback when filters aren't configured (e.g. someone skipped `install.sh`). Idempotent: no-op if blob is already anchor-form. |
+| Layer               | Trigger                                                        | Direction                            | Purpose                                                                                                                        |
+| :------------------ | :------------------------------------------------------------- | :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| **Clean filter**    | `git add` (any time the working tree → index)                  | wikilinks → anchors                  | Primary forward conversion.                                                                                                    |
+| **Smudge filter**   | `git checkout`, `git pull`, `git clone` (index → working tree) | anchors → wikilinks                  | Primary reverse conversion. Keeps the working tree Obsidian-friendly forever.                                                  |
+| **Pre-commit hook** | `git commit`                                                   | wikilinks → anchors (on staged blob) | Fallback when filters aren't configured (e.g. someone skipped `install.sh`). Idempotent: no-op if blob is already anchor-form. |
 
 `filter.obsidian.required = false` so that if Python is missing the filter passes content through unchanged instead of breaking every checkout. The resulting working tree just has anchor links - still valid markdown, still works in Obsidian.
 
@@ -155,15 +156,15 @@ No edits to the scripts are needed - they pick up the repo root via `git rev-par
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-| :--- | :--- | :--- |
-| Working tree has `[text](#slug)` instead of `[Heading](#heading)` | Forgot per-clone install OR python missing | Run `bash scripts/install.sh`, then `git rm --cached -r -- '*.md' && git checkout -- '*.md'` to re-smudge. |
-| `git status` shows `AM` on every .md file | Working tree (wikilinks) differs from index (anchors) - **this is by design** | Nothing to fix; commit normally. |
-| Hook says "converted wikilinks" but you didn't edit | First commit after install, or filter wasn't configured at `git add` time | Expected and idempotent - subsequent commits are silent. |
-| Pre-commit hook does nothing | `core.hooksPath` not set | Re-run `bash scripts/install.sh`. |
-| Conversion fails with `python: not found` | Python missing from PATH | Install Python 3.8+. With `required = false`, current files pass through unchanged. |
-| New heading in TOC link doesn't resolve in the reverse direction | Headings differ between two files with the same slug | Rename one heading so slugs are unique. |
-| Round-trip changed unrelated content | A "markdown link" in the source happened to match `[text](File.md#anchor)` form | Wrap the literal text in code fences/backticks to avoid the regex. |
+| Symptom                                                          | Likely cause                                                                    | Fix                                                                                                        |
+| :--------------------------------------------------------------- | :------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
+| Working tree has `[text](#slug)` instead of `[Heading](#heading)`       | Forgot per-clone install OR python missing                                      | Run `bash scripts/install.sh`, then `git rm --cached -r -- '*.md' && git checkout -- '*.md'` to re-smudge. |
+| `git status` shows `AM` on every .md file                        | Working tree (wikilinks) differs from index (anchors) - **this is by design**   | Nothing to fix; commit normally.                                                                           |
+| Hook says "converted wikilinks" but you didn't edit              | First commit after install, or filter wasn't configured at `git add` time       | Expected and idempotent - subsequent commits are silent.                                                   |
+| Pre-commit hook does nothing                                     | `core.hooksPath` not set                                                        | Re-run `bash scripts/install.sh`.                                                                          |
+| Conversion fails with `python: not found`                        | Python missing from PATH                                                        | Install Python 3.8+. With `required = false`, current files pass through unchanged.                        |
+| New heading in TOC link doesn't resolve in the reverse direction | Headings differ between two files with the same slug                            | Rename one heading so slugs are unique.                                                                    |
+| Round-trip changed unrelated content                             | A "markdown link" in the source happened to match `[text](File.md#anchor)` form | Wrap the literal text in code fences/backticks to avoid the regex.                                         |
 
 ---
 
@@ -173,3 +174,5 @@ No edits to the scripts are needed - they pick up the repo root via `git rev-par
 - **Slug collisions** (two headings with the same slug in one file) - first match wins, second is unrecoverable in reverse. GitHub itself disambiguates with `-1`, `-2`; this bridge doesn't.
 - **`required = false` means silent passthrough.** If your Python install is broken, you get unconverted files instead of an error. Set to `true` in `.git/config` if you'd rather fail loudly.
 - **No CRLF surprise:** both converters use binary stdin/stdout so they don't accidentally rewrite line endings on Windows.
+
+> To format all md files - `npx prettier --write "**/*.md"`

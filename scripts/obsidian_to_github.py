@@ -78,9 +78,14 @@ def make_converter(source_file: Path | None, repo_root: Path | None):
     def convert(match: re.Match) -> str:
         inner = match.group(1).strip()
 
+        # Inside GitHub/Obsidian tables an alias pipe is escaped as "\|" so the
+        # cell doesn't break. Accept either "|" or "\|" as the alias separator
+        # and drop the escaping backslash from the target.
         if "|" in inner:
             target, alias = inner.split("|", 1)
             target, alias = target.strip(), alias.strip()
+            if target.endswith("\\"):
+                target = target[:-1].strip()
         else:
             target, alias = inner, None
 
